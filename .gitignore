@@ -1,0 +1,15 @@
+# dependencies
+node_modules/
+api/node_modules/
+
+# IDE files
+.idea/
+.vscode/
+
+# Build dirs
+dist/
+build/
+*.class
+
+# OS generated
+.DS_Store

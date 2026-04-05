@@ -1,0 +1,14 @@
+{
+  "name": "call-booking-api",
+  "version": "1.0.0",
+  "description": "API Specification for Call Booking App",
+  "dependencies": {
+    "@typespec/compiler": "latest",
+    "@typespec/http": "latest",
+    "@typespec/openapi3": "latest",
+    "@typespec/rest": "latest"
+  },
+  "scripts": {
+    "build": "tsp compile main.tsp"
+  }
+}
