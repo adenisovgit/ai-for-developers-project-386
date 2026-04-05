@@ -250,10 +250,26 @@ frontend/
 
 ## Этапы реализации
 
+### Этап 0: Синхронизация контракта
+
+До создания `frontend/` и до генерации API-клиента нужно обновить:
+- `api/main.tsp`
+- `api/openapi.yaml`
+- `domain_rules.md`
+
+В этих артефактах должны быть зафиксированы:
+- `EventType.color` как обязательная HEX-строка
+- отдельная модель `EventTypeCreateRequest` для `POST /event-types`
+- optional `comment` в `Booking` и `BookingRequest`
+- `Slot.isAvailable`
+- поведение `GET /slots` как дневной сетки стартовых точек с шагом `durationMinutes`
+
+Только после завершения этого этапа можно переходить к генерации клиента и реализации `frontend/`.
+
 ### Этап 1: Инициализация проекта
 
 ```bash
-npm create vite@latest frontend -- --template vue-ts
+npm create vue@latest frontend
 cd frontend
 npm install
 npm install vue-router reka-ui @tanstack/vue-query vee-validate zod @vee-validate/zod date-fns lucide-vue-next clsx tailwind-merge
@@ -266,7 +282,11 @@ npx tailwindcss init -p
 - `src/styles/index.css`
 - `.env`
 
+Для scaffold используется официальный инструмент Vue, который создает приложение Vue 3 поверх Vite.
+
 ### Этап 2: Генерация API клиента
+
+Генерация выполняется только после завершения `Этапа 0`, когда `api/main.tsp` и `api/openapi.yaml` уже приведены к актуальному контракту.
 
 Скрипт генерации:
 
@@ -321,6 +341,7 @@ npx tailwindcss init -p
 - Используется только в форме владельца для `availableFrom` и `availableTo`
 - Показывает значения, кратные часу: `00:00`, `01:00`, ..., `23:00`
 - Значения по умолчанию в `EventTypeForm`: `09:00` и `18:00`
+- Ограничение на значения, кратные часу, проверяется не только UI-компонентом, но и Zod-схемой формы
 - Проверка формы: `availableFrom < availableTo`
 
 #### ColorPickerField.vue
@@ -349,6 +370,9 @@ npx tailwindcss init -p
 ```typescript
 import { z } from 'zod';
 
+const hourOnlyTimeRegex = /^(?:[01][0-9]|2[0-3]):00$/;
+const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
+
 export const eventTypeSchema = z.object({
   title: z.string().min(1).max(100),
   description: z.string().max(500),
@@ -358,9 +382,9 @@ export const eventTypeSchema = z.object({
     z.literal(45),
     z.literal(60),
   ]),
-  availableFrom: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/),
-  availableTo: z.string().regex(/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
+  availableFrom: z.string().regex(hourOnlyTimeRegex, 'Допустимы только значения, кратные часу'),
+  availableTo: z.string().regex(hourOnlyTimeRegex, 'Допустимы только значения, кратные часу'),
+  color: z.string().regex(hexColorRegex),
 }).refine((data) => data.availableFrom < data.availableTo, {
   path: ['availableTo'],
   message: 'Время начала должно быть меньше времени окончания',
@@ -386,7 +410,9 @@ export const bookingSchema = z.object({
 
 - `useEventTypes()` читает список типов событий
 - `useCreateEventType()` отправляет `EventTypeCreateRequest`
-- после успеха инвалидирует `['event-types']`
+- после успеха показывает toast и закрывает или сбрасывает форму
+- при необходимости UI может локально отобразить только что созданный тип события
+- повторный `GET` не считается обязательным подтверждением появления новой сущности в mock-режиме
 
 #### useSlots.ts
 
@@ -398,7 +424,9 @@ export const bookingSchema = z.object({
 
 - `useBookings()` загружает список бронирований для `/admin`
 - `useCreateBooking()` отправляет `BookingRequest` с optional `comment`
-- после успеха инвалидирует `['bookings']`
+- после успеха показывает состояние успеха и сбрасывает форму
+- при необходимости UI может локально отобразить только что созданное бронирование
+- повторный `GET` не считается обязательным подтверждением появления новой записи в mock-режиме
 
 ### Этап 8: Страницы
 
@@ -458,8 +486,10 @@ VITE_API_URL=http://localhost:3001
 
 Правила использования Prism на шаге 3:
 - Prism нужен как контрактный mock
-- `POST`-операции должны быть достаточны для отладки UI-потока отправки формы
-- не требуется stateful-симуляция, при которой последующие `GET` обязаны отражать созданные сущности
+- `GET /event-types`, `GET /bookings` и `GET /slots` опираются на предсказуемые example-ответы из OpenAPI
+- `POST`-операции используются для проверки submit-flow, loading, success, error и клиентской валидации
+- план не требует, чтобы последующий `GET` отражал результат `POST`
+- для create-flow допустимо локальное success-состояние и локальное UI-обновление без persistence в mock
 - отдельный mock-state поверх Prism в рамках шага 3 не планируется
 
 ### Этап 10: Финальная настройка
@@ -542,13 +572,14 @@ UI-требования:
 ## Чек-лист реализации
 
 ### Инфраструктура
-- [ ] `frontend/` создан через Vite + Vue + TypeScript
+- [ ] `api/main.tsp`, `api/openapi.yaml` и `domain_rules.md` синхронизированы до начала фронтенд-реализации
+- [ ] `frontend/` создан через официальный инструмент Vue (`npm create vue@latest frontend`)
 - [ ] зависимости установлены
 - [ ] TailwindCSS настроен
 - [ ] Vue Router настроен
 - [ ] TanStack Query инициализирован
 - [ ] Prism mock сервер запускается
-- [ ] API клиент генерируется из `../api/openapi.yaml`
+- [ ] API клиент генерируется из актуального `../api/openapi.yaml`
 
 ### Контракты
 - [ ] `EventType` включает `color`
@@ -584,7 +615,7 @@ UI-требования:
 - [ ] есть loading и empty states
 - [ ] responsive поведение корректно
 - [ ] фокусы и базовая a11y не потеряны
-- [ ] план не предполагает stateful mock-слой поверх Prism
+- [ ] план не предполагает обязательный stateful mock-слой поверх Prism
 
 ---
 
@@ -614,4 +645,4 @@ npm run dev
 
 ## Следующий шаг
 
-После фиксации этого артефакта можно переходить к обновлению `api/main.tsp`, `api/openapi.yaml`, `domain_rules.md` и затем к реализации `frontend/`.
+После фиксации этого артефакта сначала обновляются `api/main.tsp`, `api/openapi.yaml` и `domain_rules.md`. Затем создается и реализуется `frontend/`. После этого запускаются `npm run generate-api` и `npm run dev`.
