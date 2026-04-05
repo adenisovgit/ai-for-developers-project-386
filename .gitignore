@@ -13,3 +13,6 @@ build/
 
 # OS generated
 .DS_Store
+
+# TypeSpec
+api/tsp-output/
