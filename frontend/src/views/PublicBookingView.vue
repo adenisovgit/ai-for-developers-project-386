@@ -513,12 +513,17 @@ function openSlotDialog() {
             </h3>
           </div>
 
-          <div v-if="isSlotsLoading" class="space-y-3">
-            <div
-              v-for="index in 8"
-              :key="index"
-              class="h-20 animate-pulse rounded-2xl bg-secondary/80"
-            />
+          <div
+            v-if="isSlotsLoading"
+            class="rounded-[1.75rem] border border-border/70 bg-background/50 p-4"
+          >
+            <div class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,11rem),1fr))] gap-3">
+              <div
+                v-for="index in 8"
+                :key="index"
+                class="h-[4.5rem] animate-pulse rounded-2xl bg-secondary/80"
+              />
+            </div>
           </div>
 
           <div
