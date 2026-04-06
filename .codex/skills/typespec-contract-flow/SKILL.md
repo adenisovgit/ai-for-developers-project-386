@@ -1,0 +1,1 @@
+../../../docs/agent-playbooks/typespec-contract-flow.md
