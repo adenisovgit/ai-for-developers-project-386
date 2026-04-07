@@ -2,6 +2,10 @@
 import Button from '@/components/ui/Button.vue'
 import { cn } from '@/lib/utils'
 
+const dialogId = Math.random().toString(36).slice(2)
+const titleId = `dialog-title-${dialogId}`
+const descriptionId = `dialog-description-${dialogId}`
+
 const props = withDefaults(
   defineProps<{
     open: boolean
@@ -47,11 +51,15 @@ function closeDialog() {
               props.contentClass,
             )
           "
+          role="dialog"
+          aria-modal="true"
+          :aria-labelledby="title ? titleId : undefined"
+          :aria-describedby="description ? descriptionId : undefined"
         >
           <div class="mb-6 flex items-start justify-between gap-4">
             <div class="space-y-1">
-              <h2 v-if="title" class="font-display text-2xl font-semibold">{{ title }}</h2>
-              <p v-if="description" class="text-sm text-muted-foreground">
+              <h2 v-if="title" :id="titleId" class="font-display text-2xl font-semibold">{{ title }}</h2>
+              <p v-if="description" :id="descriptionId" class="text-sm text-muted-foreground">
                 {{ description }}
               </p>
             </div>

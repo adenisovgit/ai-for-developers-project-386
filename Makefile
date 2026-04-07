@@ -2,7 +2,7 @@ SHELL := /bin/bash
 
 API_URL ?= http://localhost:8080
 
-.PHONY: help backend frontend mock frontend-mock dev install frontend-install backend-test frontend-check backend-build
+.PHONY: help backend frontend mock frontend-mock dev install frontend-install backend-test frontend-check backend-build e2e
 
 help:
 	@printf "Available targets:\n"
@@ -15,6 +15,7 @@ help:
 	@printf "  make backend-build   Build backend sources\n"
 	@printf "  make backend-test    Run backend tests\n"
 	@printf "  make frontend-check  Run frontend type-check\n"
+	@printf "  make e2e            Build frontend for backend API and run Playwright tests\n"
 
 backend:
 	cd backend && ./gradlew bootRun
@@ -46,3 +47,6 @@ backend-test:
 
 frontend-check:
 	cd frontend && npm run type-check
+
+e2e:
+	cd frontend && npm run e2e

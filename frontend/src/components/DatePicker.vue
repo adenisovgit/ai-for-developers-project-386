@@ -12,6 +12,6 @@ defineProps<{
 <template>
   <div>
     <Label>Дата звонка</Label>
-    <Input v-model="model" type="date" :min="min" />
+    <Input v-model="model" type="date" :min="min" data-testid="booking-date-input" />
   </div>
 </template>

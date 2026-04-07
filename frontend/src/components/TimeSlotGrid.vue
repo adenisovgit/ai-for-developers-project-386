@@ -21,6 +21,9 @@ const emit = defineEmits<{
       :key="slot.startTime"
       type="button"
       :disabled="disabled"
+      data-testid="slot-option"
+      :data-start-time="slot.startTime"
+      :data-end-time="slot.endTime"
       :class="
         cn(
           'flex w-full items-center justify-center rounded-2xl border px-5 py-4 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60',

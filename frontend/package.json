@@ -8,9 +8,15 @@
     "dev:client": "vite",
     "mock": "prism mock ../api/openapi.yaml --port 3001",
     "build": "vue-tsc --noEmit && vite build",
+    "build:e2e": "sh -c 'VITE_API_URL=http://127.0.0.1:8080 vue-tsc --noEmit && VITE_API_URL=http://127.0.0.1:8080 vite build'",
     "generate-api": "openapi-generator-cli generate -i ../api/openapi.yaml -g typescript-axios -o src/api --additional-properties=supportsES6=true,typescriptThreePlus=true,withSeparateModelsAndApi=true,modelPackage=models,apiPackage=apis",
+    "preview:e2e": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
     "preview": "vite preview",
-    "type-check": "vue-tsc --noEmit"
+    "type-check": "vue-tsc --noEmit",
+    "e2e": "npm run build:e2e && playwright test",
+    "e2e:headed": "npm run build:e2e && playwright test --headed",
+    "e2e:debug": "npm run build:e2e && playwright test --debug",
+    "e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@tanstack/vue-query": "^5.90.2",
@@ -28,6 +34,7 @@
   },
   "devDependencies": {
     "@openapitools/openapi-generator-cli": "^2.25.0",
+    "@playwright/test": "^1.59.1",
     "@stoplight/prism-cli": "^5.14.2",
     "@tanstack/vue-query-devtools": "^5.91.0",
     "@tsconfig/node24": "^24.0.4",

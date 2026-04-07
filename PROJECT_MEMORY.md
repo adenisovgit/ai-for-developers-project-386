@@ -68,13 +68,18 @@
 - Prism должен запускаться без `--dynamic`, чтобы использовать examples из OpenAPI.
 - В корне репозитория есть `Makefile` с целями для запуска backend, frontend, mock и совместного dev-режима.
 - Для следующего шага интеграционного тестирования зафиксированы дефолты:
+  - шаг реализован на `@playwright/test`
   - Playwright-тесты живут во `frontend/`
+  - основной конфиг находится в `frontend/playwright.config.ts`
+  - сценарии находятся в `frontend/tests/e2e/`
+  - CI workflow находится в `.github/workflows/integration-e2e.yml`
   - e2e frontend поднимается через `vite preview` на `http://127.0.0.1:4173`
   - e2e frontend ходит в backend по `VITE_API_URL=http://127.0.0.1:8080`
   - весь e2e-контур работает в `UTC`
   - в CI e2e запускается с `workers: 1`
   - test-only reset endpoint не планируется
   - изоляция сценариев строится на уникальных датах и уникальных `guestEmail`
+  - локальный запуск e2e идет через `make e2e` или `frontend` npm scripts
 - Рабочая цепочка генерации такая:
   - обновить `api/main.tsp`
   - пересобрать `api/openapi.yaml`

@@ -231,6 +231,7 @@ function openSlotDialog() {
               <button
                 type="button"
                 class="w-full text-left"
+                data-testid="event-type-trigger"
                 @click="isEventTypeDialogOpen = true"
               >
                 <div
@@ -297,6 +298,7 @@ function openSlotDialog() {
               <button
                 type="button"
                 class="w-full text-left"
+                data-testid="slot-trigger"
                 @click="openSlotDialog"
               >
                 <div
@@ -370,7 +372,7 @@ function openSlotDialog() {
             </p>
           </div>
 
-          <div v-if="successfulBooking" class="space-y-5">
+          <div v-if="successfulBooking" class="space-y-5" data-testid="booking-success-state">
             <div class="flex items-start gap-3 rounded-[1.5rem] bg-emerald-500/10 p-4 text-emerald-700 dark:text-emerald-300">
               <CheckCircle2 class="mt-0.5 h-5 w-5 shrink-0" />
               <div>
@@ -416,6 +418,7 @@ function openSlotDialog() {
 
           <div
             v-else
+            data-testid="booking-form-placeholder"
             class="rounded-[1.5rem] border border-dashed border-border bg-background/60 p-6 text-sm text-muted-foreground"
           >
             <div class="flex items-start gap-3">
