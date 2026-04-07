@@ -7,6 +7,7 @@ const model = defineModel<string>({ required: true })
 
 defineProps<{
   error?: string
+  inputTestId?: string
 }>()
 
 const presetColors = [
@@ -40,7 +41,7 @@ const presetColors = [
         @click="model = color.value"
       />
     </div>
-    <Input v-model="model" placeholder="#22C55E" />
+    <Input v-model="model" :data-testid="inputTestId" placeholder="#22C55E" />
     <p v-if="error" class="field-error">{{ error }}</p>
   </div>
 </template>

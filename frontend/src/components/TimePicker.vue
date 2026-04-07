@@ -6,6 +6,7 @@ const model = defineModel<string>({ required: true })
 
 defineProps<{
   label: string
+  selectTestId?: string
 }>()
 
 const hourOptions = Array.from({ length: 24 }, (_, index) =>
@@ -16,7 +17,7 @@ const hourOptions = Array.from({ length: 24 }, (_, index) =>
 <template>
   <div>
     <Label>{{ label }}</Label>
-    <Select v-model="model">
+    <Select v-model="model" :data-testid="selectTestId">
       <option v-for="option in hourOptions" :key="option" :value="option">
         {{ option }}
       </option>

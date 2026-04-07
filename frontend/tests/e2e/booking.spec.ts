@@ -91,6 +91,32 @@ async function selectEventType(page: Page, title: string) {
   await dialog.getByRole('button', { name: new RegExp(title, 'i') }).click()
 }
 
+async function createEventType(page: Page, params: {
+  title: string
+  description: string
+  durationMinutes: string
+  availableFrom: string
+  availableTo: string
+  color: string
+}) {
+  await page.goto('/admin')
+  await page.getByRole('button', { name: 'Создать новый тип события' }).click()
+
+  const dialog = page.getByRole('dialog', { name: 'Новый тип события' })
+  await expect(dialog).toBeVisible()
+
+  await dialog.getByPlaceholder('Например, Знакомство').fill(params.title)
+  await dialog.getByPlaceholder('Коротко опиши, о чем этот звонок.').fill(params.description)
+  await dialog.locator('select').nth(0).selectOption(params.durationMinutes)
+  await dialog.locator('select').nth(1).selectOption(params.availableFrom)
+  await dialog.locator('select').nth(2).selectOption(params.availableTo)
+  await dialog.getByRole('button', { name: 'Красный' }).click()
+  await dialog.getByRole('button', { name: 'Создать тип события' }).click()
+
+  await expect(page.getByText('Тип события создан')).toBeVisible()
+  await expect(page.getByText(params.title)).toBeVisible()
+}
+
 async function selectSlot(page: Page, date: string) {
   await page.getByTestId('slot-trigger').click()
 
@@ -214,4 +240,54 @@ test('конфликт слота показывает 409 toast, сбрасыв
     /Failed to load resource: the server responded with a status of 409/,
     /AxiosError: Request failed with status code 409/,
   ])
+})
+
+test('новый тип события можно создать в панели владельца и затем забронировать через публичную страницу', async ({
+  page,
+}) => {
+  const diagnostics = attachDiagnostics(page)
+  const uniqueSuffix = Date.now()
+  const bookingDate = getUtcDateOffset(3)
+  const eventTypeTitle = `Playwright Event Type ${uniqueSuffix}`
+  const eventTypeDescription = `Новый тип события для e2e ${uniqueSuffix}`
+  const guestName = `Playwright New Event ${uniqueSuffix}`
+  const guestEmail = createGuestEmail('new-event-type')
+  const guestComment = `Бронирование по новому типу ${uniqueSuffix}.`
+
+  await createEventType(page, {
+    title: eventTypeTitle,
+    description: eventTypeDescription,
+    durationMinutes: '60',
+    availableFrom: '11:00',
+    availableTo: '13:00',
+    color: '#EF4444',
+  })
+
+  await page.goto('/')
+
+  await selectEventType(page, eventTypeTitle)
+  await selectSlot(page, bookingDate)
+
+  const guestNameInput = page.getByTestId('guest-name-input')
+  await expect(guestNameInput).toBeFocused()
+
+  await guestNameInput.fill(guestName)
+  await page.getByTestId('guest-email-input').fill(guestEmail)
+  await page.getByTestId('guest-comment-input').fill(guestComment)
+  await page.getByTestId('booking-submit-button').click()
+
+  await expect(page.getByTestId('booking-success-state')).toBeVisible()
+  await expect(page.getByText('Бронирование успешно отправлено')).toBeVisible()
+  await expect(page.getByText(guestEmail)).toBeVisible()
+
+  await page.goto('/admin')
+
+  await expect(page.getByRole('heading', { name: eventTypeTitle, exact: true })).toBeVisible()
+  await expect(page.getByText(eventTypeDescription)).toBeVisible()
+  await expect(page.getByText(guestName)).toBeVisible()
+  await expect(page.getByText(guestEmail)).toBeVisible()
+  await expect(page.getByText(guestComment)).toBeVisible()
+
+  expectApiTrafficUsesBackend(diagnostics)
+  await expectNoCriticalBrowserErrors(diagnostics)
 })
