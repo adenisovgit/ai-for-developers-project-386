@@ -57,6 +57,12 @@ sourceSets {
 	}
 }
 
+tasks.named('processResources') {
+	from('../frontend/dist') {
+		into 'static'
+	}
+}
+
 tasks.named('compileJava') {
 	dependsOn tasks.named('openApiGenerate')
 }

@@ -54,6 +54,8 @@
 - HTTP-клиент и модели лежат в `frontend/src/api`.
 - `frontend/src/api` генерируется из `api/openapi.yaml`.
 - Сгенерированные файлы во frontend нельзя править вручную.
+- В dev-режиме frontend ходит в backend через `VITE_API_URL`, а если переменная не задана, используется fallback `http://localhost:3001`.
+- В production frontend собирается с `VITE_API_URL=""` и использует same-origin запросы к backend.
 - Публичный flow:
   - шаг 1: выбор типа события
   - шаг 2: выбор даты и доступного слота
@@ -91,10 +93,18 @@
 - Backend реализован на Spring Boot 3 + Gradle.
 - Структура кода организована по домену, а не по техническим слоям.
 - Конфигурация хранится в `application.yml`.
+- `server.port` читает `PORT` из окружения с fallback на `8080`.
 - CORS для локальной разработки настраивается через `@ConfigurationProperties`.
 - Ошибки домена маппятся в plain-text ответы через глобальный `@ControllerAdvice`.
 - Данные хранятся только в памяти процесса.
 - При старте backend заполняет demo-набор `event types`, а `bookings` стартуют пустыми.
+- В production backend отдает собранный frontend как статические ресурсы из Spring Boot jar.
+- SPA entrypoints `/` и `/admin` форвардятся на `index.html`, а API-маршруты продолжают обслуживаться backend-контроллерами.
+
+## Deploy
+- Production-сборка выполняется из корня монорепозитория через корневой `Dockerfile`.
+- Docker image собирает Vue frontend, затем включает `frontend/dist` в ресурсы Spring Boot перед `bootJar`.
+- Render должен использовать один `Docker Web Service`, который обслуживает и API, и frontend с одного origin.
 
 ## UX договоренности
 - Вверху приложения есть единая панель высотой 40px.
