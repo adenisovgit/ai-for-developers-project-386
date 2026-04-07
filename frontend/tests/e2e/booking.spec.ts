@@ -117,6 +117,21 @@ async function createEventType(page: Page, params: {
   await expect(page.getByText(params.title)).toBeVisible()
 }
 
+async function expectSlotAvailability(page: Page, labels: {
+  visible: string[]
+  hidden: string[]
+}) {
+  const dialog = page.getByRole('dialog', { name: 'Выбор даты и слота' })
+
+  for (const label of labels.visible) {
+    await expect(dialog.getByTestId('slot-option').filter({ hasText: label })).toHaveCount(1)
+  }
+
+  for (const label of labels.hidden) {
+    await expect(dialog.getByTestId('slot-option').filter({ hasText: label })).toHaveCount(0)
+  }
+}
+
 async function selectSlot(page: Page, date: string) {
   await page.getByTestId('slot-trigger').click()
 
@@ -287,6 +302,59 @@ test('новый тип события можно создать в панели
   await expect(page.getByText(guestName)).toBeVisible()
   await expect(page.getByText(guestEmail)).toBeVisible()
   await expect(page.getByText(guestComment)).toBeVisible()
+
+  expectApiTrafficUsesBackend(diagnostics)
+  await expectNoCriticalBrowserErrors(diagnostics)
+})
+
+test('сегодняшние прошедшие слоты скрываются в UI, а backend отклоняет бронирование в прошлом', async ({
+  page,
+  request,
+}) => {
+  const diagnostics = attachDiagnostics(page)
+  const bookingDate = getUtcDateOffset(0)
+  const pastDate = getUtcDateOffset(-1)
+  const uniqueSuffix = Date.now()
+  const eventTypeTitle = `Playwright Today Slots ${uniqueSuffix}`
+  const eventTypeDescription = `Проверка прошедших слотов ${uniqueSuffix}`
+
+  await page.clock.install({ time: new Date(`${bookingDate}T12:00:00Z`) })
+
+  await createEventType(page, {
+    title: eventTypeTitle,
+    description: eventTypeDescription,
+    durationMinutes: '60',
+    availableFrom: '10:00',
+    availableTo: '14:00',
+    color: '#EF4444',
+  })
+
+  await page.goto('/')
+
+  await selectEventType(page, eventTypeTitle)
+  await page.getByTestId('slot-trigger').click()
+
+  const slotDialog = page.getByRole('dialog', { name: 'Выбор даты и слота' })
+  await expect(slotDialog).toBeVisible()
+  await slotDialog.getByTestId('booking-date-input').fill(bookingDate)
+
+  await expectSlotAvailability(page, {
+    visible: ['13:00 - 14:00'],
+    hidden: ['10:00 - 11:00', '11:00 - 12:00', '12:00 - 13:00'],
+  })
+
+  const eventTypeId = await getEventTypeId(request, eventTypeTitle)
+  const response = await request.post(`${apiBaseUrl}/bookings`, {
+    data: {
+      eventTypeId,
+      startTime: `${pastDate}T10:00:00Z`,
+      guestName: 'Past Slot',
+      guestEmail: createGuestEmail('past-slot'),
+    },
+  })
+
+  expect(response.status()).toBe(400)
+  await expect(response.text()).resolves.toContain('Нельзя бронировать слоты в прошлом.')
 
   expectApiTrafficUsesBackend(diagnostics)
   await expectNoCriticalBrowserErrors(diagnostics)

@@ -21,16 +21,18 @@ import {
   ListChecks,
   UserRound,
 } from 'lucide-vue-next'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 
 const selectedEventType = ref<EventType | null>(null)
 const selectedDate = ref<string | null>(null)
 const selectedSlot = ref<SlotStatus | null>(null)
 const successfulBooking = ref<Booking | null>(null)
 const bookingFormRef = ref<InstanceType<typeof BookingForm> | null>(null)
+const currentTime = ref(new Date())
 
 const isEventTypeDialogOpen = ref(false)
 const isSlotDialogOpen = ref(false)
+let slotClockInterval: ReturnType<typeof setInterval> | null = null
 
 const { eventTypes, isLoading: isEventTypesLoading } = useEventTypes()
 const { occupiedSlots, isLoading: isSlotsLoading, refetchSelectedDate } = useSlots(selectedDate)
@@ -72,6 +74,7 @@ const displayedSlots = computed(() => {
     selectedEventType.value,
     selectedDate.value,
     occupiedSlots.value,
+    currentTime.value,
   ).filter((slot) => slot.isAvailable)
 })
 
@@ -81,6 +84,29 @@ const isReadyForBookingForm = computed(
 
 watch(selectedDate, () => {
   selectedSlot.value = null
+})
+
+watch(isSlotDialogOpen, (isOpen) => {
+  if (slotClockInterval) {
+    clearInterval(slotClockInterval)
+    slotClockInterval = null
+  }
+
+  currentTime.value = new Date()
+
+  if (!isOpen) {
+    return
+  }
+
+  slotClockInterval = setInterval(() => {
+    currentTime.value = new Date()
+  }, 60_000)
+}, { immediate: true })
+
+onUnmounted(() => {
+  if (slotClockInterval) {
+    clearInterval(slotClockInterval)
+  }
 })
 
 function handleEventTypeSelect(eventType: EventType) {
@@ -537,7 +563,7 @@ function openSlotDialog() {
             v-else-if="!displayedSlots.length"
             class="rounded-[1.75rem] border border-dashed border-border bg-background/60 p-6 text-sm leading-6 text-muted-foreground"
           >
-            На этот день нет интервалов внутри окна доступности. Попробуй выбрать другую дату.
+            На этот день не осталось доступных интервалов внутри окна записи. Попробуй выбрать другую дату.
           </div>
 
           <div

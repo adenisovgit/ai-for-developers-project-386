@@ -1,6 +1,6 @@
 import type { EventType } from '@/api/models/event-type'
 import type { OccupiedSlot } from '@/api/models/occupied-slot'
-import { addMinutes, parseISO } from 'date-fns'
+import { addMinutes, format, parseISO } from 'date-fns'
 
 export interface SlotStatus {
   startTime: string
@@ -25,6 +25,7 @@ export function buildSlotStatuses(
   eventType: EventType | null,
   selectedDate: string,
   occupiedSlots: OccupiedSlot[],
+  now: Date,
 ) {
   if (!eventType) {
     return [] as SlotStatus[]
@@ -38,6 +39,7 @@ export function buildSlotStatuses(
     start: parseISO(slot.startTime),
     end: parseISO(slot.endTime),
   }))
+  const isSelectedDateToday = selectedDate === format(now, 'yyyy-MM-dd')
 
   const slotStatuses: SlotStatus[] = []
   let cursor = new Date(dayStart)
@@ -45,8 +47,9 @@ export function buildSlotStatuses(
   while (addMinutes(cursor, durationMinutes) <= dayEnd) {
     const slotStart = new Date(cursor)
     const slotEnd = addMinutes(slotStart, durationMinutes)
+    const isPastSlot = isSelectedDateToday && slotStart <= now
 
-    const isAvailable = !occupiedIntervals.some((interval) =>
+    const isAvailable = !isPastSlot && !occupiedIntervals.some((interval) =>
       intervalsOverlap(slotStart, slotEnd, interval.start, interval.end),
     )
 
