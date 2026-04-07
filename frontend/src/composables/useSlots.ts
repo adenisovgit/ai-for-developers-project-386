@@ -1,11 +1,12 @@
 import type { OccupiedSlot } from '@/api/models/occupied-slot'
 import { apiClient } from '@/lib/api-client'
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 
 export function useSlots(
   selectedDate: MaybeRefOrGetter<string | null | undefined>,
 ) {
+  const queryClient = useQueryClient()
   const queryKey = computed(() => ['slots', toValue(selectedDate) ?? ''])
 
   const enabled = computed(() => Boolean(toValue(selectedDate)))
@@ -27,5 +28,14 @@ export function useSlots(
   return {
     ...query,
     occupiedSlots: computed(() => query.data.value ?? []),
+    async refetchSelectedDate() {
+      const currentDate = toValue(selectedDate)
+
+      if (!currentDate) {
+        return
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['slots', currentDate] })
+    },
   }
 }

@@ -45,35 +45,6 @@ const navigationItems = [
         <ThemeToggle />
       </header>
 
-      <section class="mb-8">
-        <div class="surface-panel w-full overflow-hidden px-6 py-7 sm:px-8 sm:py-9">
-          <div class="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-stretch">
-            <div class="max-w-3xl space-y-3">
-              <p
-                class="text-sm font-semibold uppercase tracking-[0.28em] text-sky-600 dark:text-sky-300"
-              >
-                Call Booking
-              </p>
-              <div class="space-y-2">
-                <h1 class="font-display text-3xl font-semibold leading-tight sm:text-4xl">
-                  Созвоны без хаоса и лишней ручной координации
-                </h1>
-              </div>
-            </div>
-
-            <div
-              class="flex h-full items-center rounded-[1.75rem] border border-white/40 bg-background/80 p-5 shadow-sm dark:border-white/10"
-            >
-              <p class="text-sm leading-7 text-muted-foreground sm:text-base">
-                Публичный поток для гостя и отдельная панель владельца живут в одном
-                интерфейсе с контрактным mock API, быстрым созданием типов событий и
-                понятным сценарием бронирования.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <main class="flex-1">
         <RouterView />
       </main>

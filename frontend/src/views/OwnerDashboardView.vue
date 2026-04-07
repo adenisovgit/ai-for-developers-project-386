@@ -42,8 +42,7 @@ async function handleCreateEventType(payload: EventTypeCreateRequest) {
             </h2>
             <p class="max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
               Здесь можно быстро добавить новый формат звонка с часовыми окнами
-              доступности и видеть текущие бронирования, собранные из mock API и локального
-              create-flow.
+              доступности и видеть текущие бронирования, которые приходят из backend API.
             </p>
           </div>
         </div>

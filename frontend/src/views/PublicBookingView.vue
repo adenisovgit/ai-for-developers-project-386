@@ -23,9 +23,6 @@ import {
 } from 'lucide-vue-next'
 import { computed, nextTick, ref, watch } from 'vue'
 
-const { eventTypes, isLoading: isEventTypesLoading } = useEventTypes()
-const createBookingMutation = useCreateBooking()
-
 const selectedEventType = ref<EventType | null>(null)
 const selectedDate = ref<string | null>(null)
 const selectedSlot = ref<SlotStatus | null>(null)
@@ -35,7 +32,14 @@ const bookingFormRef = ref<InstanceType<typeof BookingForm> | null>(null)
 const isEventTypeDialogOpen = ref(false)
 const isSlotDialogOpen = ref(false)
 
-const { occupiedSlots, isLoading: isSlotsLoading } = useSlots(selectedDate)
+const { eventTypes, isLoading: isEventTypesLoading } = useEventTypes()
+const { occupiedSlots, isLoading: isSlotsLoading, refetchSelectedDate } = useSlots(selectedDate)
+const createBookingMutation = useCreateBooking({
+  onConflict: async () => {
+    selectedSlot.value = null
+    await refetchSelectedDate()
+  },
+})
 
 const selectedFlowSummary = computed(() => [
   {

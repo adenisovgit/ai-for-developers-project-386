@@ -1,0 +1,67 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.5.6'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.openapi.generator' version '7.12.0'
+}
+
+group = 'io.hexlet.callbooking'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'io.swagger.core.v3:swagger-annotations-jakarta:2.2.31'
+	implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+	runtimeOnly 'com.h2database:h2'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+def generatedSourcesDir = layout.buildDirectory.dir('generated')
+
+openApiGenerate {
+	generatorName = 'spring'
+	inputSpec = "${rootDir}/../api/openapi.yaml"
+	outputDir = generatedSourcesDir.get().asFile.path
+	apiPackage = 'io.hexlet.callbooking.generated.api'
+	modelPackage = 'io.hexlet.callbooking.generated.model'
+	invokerPackage = 'io.hexlet.callbooking.generated.invoker'
+	configOptions = [
+		interfaceOnly: 'true',
+		useSpringBoot3: 'true',
+		useJakartaEe: 'true',
+		performBeanValidation: 'true',
+		dateLibrary: 'java8',
+		openApiNullable: 'false',
+		documentationProvider: 'none',
+		useTags: 'false'
+	]
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir "${generatedSourcesDir.get().asFile}/src/main/java"
+		}
+	}
+}
+
+tasks.named('compileJava') {
+	dependsOn tasks.named('openApiGenerate')
+}
+
+tasks.named('test') {
+	dependsOn tasks.named('openApiGenerate')
+	useJUnitPlatform()
+}

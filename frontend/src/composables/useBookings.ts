@@ -2,27 +2,9 @@ import type { Booking } from '@/api/models/booking'
 import type { BookingRequest } from '@/api/models/booking-request'
 import { useToast } from '@/composables/useToast'
 import { apiClient } from '@/lib/api-client'
+import axios from 'axios'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { computed, ref } from 'vue'
-
-const localBookings = ref<Booking[]>([])
-
-function mergeBookings(baseItems: Booking[], createdItems: Booking[]) {
-  const map = new Map<string, Booking>()
-
-  for (const item of baseItems) {
-    map.set(item.id, item)
-  }
-
-  for (const item of createdItems) {
-    map.set(item.id, item)
-  }
-
-  return Array.from(map.values()).sort(
-    (left, right) =>
-      new Date(left.startTime).getTime() - new Date(right.startTime).getTime(),
-  )
-}
+import { computed } from 'vue'
 
 export function useBookings() {
   const query = useQuery({
@@ -32,37 +14,45 @@ export function useBookings() {
 
   return {
     ...query,
-    bookings: computed(() => mergeBookings(query.data.value ?? [], localBookings.value)),
+    bookings: computed(() =>
+      [...(query.data.value ?? [])].sort(
+        (left, right) =>
+          new Date(left.startTime).getTime() - new Date(right.startTime).getTime(),
+      ),
+    ),
   }
 }
 
-export function useCreateBooking() {
+export function useCreateBooking(options?: { onConflict?: () => Promise<void> | void }) {
   const queryClient = useQueryClient()
   const { showToast } = useToast()
 
   return useMutation({
-    mutationFn: async (payload: BookingRequest) => {
-      await apiClient.bookingsCreate(payload)
-
-      const createdBooking: Booking = {
-        ...payload,
-        id: crypto.randomUUID(),
-      }
-
-      return createdBooking
-    },
+    mutationFn: async (payload: BookingRequest) =>
+      (await apiClient.bookingsCreate(payload)).data,
     onSuccess: (createdBooking) => {
-      localBookings.value = [createdBooking, ...localBookings.value]
-      queryClient.setQueryData<Booking[]>(['bookings'], (current = []) =>
-        mergeBookings(current, [createdBooking]),
-      )
+      queryClient.setQueryData<Booking[]>(['bookings'], (current = []) => [
+        ...current.filter((item) => item.id !== createdBooking.id),
+        createdBooking,
+      ])
       showToast({
         variant: 'success',
         title: 'Бронирование отправлено',
-        description: 'Заявка сохранена локально и показана в панели владельца.',
+        description: 'Заявка сохранена на сервере и появилась в панели владельца.',
       })
     },
-    onError: () => {
+    onError: async (error) => {
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
+        await options?.onConflict?.()
+        showToast({
+          variant: 'error',
+          title: 'Слот уже занят',
+          description: 'Кто-то успел забронировать это время чуть раньше. Мы уже обновили занятость на день.',
+        })
+
+        return
+      }
+
       showToast({
         variant: 'error',
         title: 'Не удалось отправить бронирование',

@@ -4,23 +4,7 @@ import { apiClient } from '@/lib/api-client'
 import { normalizeHourTime } from '@/lib/date'
 import { useToast } from '@/composables/useToast'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import { computed, ref } from 'vue'
-
-const localEventTypes = ref<EventType[]>([])
-
-function mergeEventTypes(baseItems: EventType[], createdItems: EventType[]) {
-  const map = new Map<string, EventType>()
-
-  for (const item of baseItems) {
-    map.set(item.id, item)
-  }
-
-  for (const item of createdItems) {
-    map.set(item.id, item)
-  }
-
-  return Array.from(map.values())
-}
+import { computed } from 'vue'
 
 function normalizeEventType(eventType: EventType): EventType {
   return {
@@ -38,12 +22,7 @@ export function useEventTypes() {
 
   return {
     ...query,
-    eventTypes: computed(() =>
-      mergeEventTypes(
-        (query.data.value ?? []).map(normalizeEventType),
-        localEventTypes.value,
-      ),
-    ),
+    eventTypes: computed(() => (query.data.value ?? []).map(normalizeEventType)),
   }
 }
 
@@ -52,25 +31,17 @@ export function useCreateEventType() {
   const { showToast } = useToast()
 
   return useMutation({
-    mutationFn: async (payload: EventTypeCreateRequest) => {
-      await apiClient.eventTypesCreate(payload)
-
-      const createdEventType: EventType = {
-        ...payload,
-        id: crypto.randomUUID(),
-      }
-
-      return createdEventType
-    },
+    mutationFn: async (payload: EventTypeCreateRequest) =>
+      normalizeEventType((await apiClient.eventTypesCreate(payload)).data),
     onSuccess: (createdEventType) => {
-      localEventTypes.value = [createdEventType, ...localEventTypes.value]
-      queryClient.setQueryData<EventType[]>(['event-types'], (current = []) =>
-        mergeEventTypes(current, [createdEventType]),
-      )
+      queryClient.setQueryData<EventType[]>(['event-types'], (current = []) => [
+        ...current.filter((item) => item.id !== createdEventType.id),
+        createdEventType,
+      ])
       showToast({
         variant: 'success',
         title: 'Тип события создан',
-        description: 'Новая карточка уже добавлена в локальный интерфейс.',
+        description: 'Новая карточка сохранена на сервере и добавлена в каталог.',
       })
     },
     onError: () => {
